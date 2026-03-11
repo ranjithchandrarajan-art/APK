@@ -1,463 +1,147 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>BidDrive Auctions</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dealer Auction Portal</title>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0d1117;--surface:#161b22;--card:#1c2330;
-  --primary:#e6a817;--primary-dark:#c48a0a;
-  --text:#e6edf3;--muted:#8b949e;--danger:#f85149;
-  --success:#3fb950;--live:#f85149;
-  --radius:10px;--bar:56px;
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#364586}
+
+body{
+  background:var(--brand);
+  font-family:'Segoe UI',Arial,sans-serif;
+  overflow:hidden;
+  height:100vh;
 }
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:15px;overscroll-behavior:none}
-button{cursor:pointer;border:none;outline:none;font-family:inherit}
-input{outline:none;font-family:inherit}
 
-#topBar{position:fixed;top:0;left:0;right:0;height:var(--bar);background:var(--surface);border-bottom:1px solid #30363d;display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:100;}
-#topBar .brand{font-weight:700;font-size:17px;color:var(--primary)}
-#timerBox{font-size:12px;color:var(--muted);text-align:center}
-#timerBox span{display:block;color:var(--text);font-weight:600;font-size:14px}
-#logoutBtn{background:transparent;color:var(--muted);font-size:12px;padding:6px 10px;border:1px solid #30363d;border-radius:6px}
-#logoutBtn:active{background:#30363d}
+/* TOP BAR */
+.topbar{
+  position:fixed;top:0;left:0;width:100%;height:36px;
+  background:var(--brand);color:white;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;z-index:1000;
+  box-shadow:0 2px 8px rgba(0,0,0,.4);
+}
+.topbar .brand-title{font-weight:700;font-size:15px;letter-spacing:.3px}
+.topbar .search-wrap{display:flex;align-items:center;gap:6px}
+.topbar input{
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:white;border-radius:6px;padding:4px 10px;font-size:13px;
+  outline:none;width:180px;
+}
+.topbar input::placeholder{color:rgba(255,255,255,.6)}
+.topbar input:focus{background:rgba(255,255,255,.25)}
 
-#main{position:fixed;top:var(--bar);bottom:var(--bar);left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 10px 0}
+/* IFRAME */
+iframe{
+  position:absolute;
+  top:36px;left:0;
+  width:100vw;
+  height:calc(100vh - 66px);
+  border:none;
+  display:block;
+}
 
-#bottomBar{position:fixed;bottom:0;left:0;right:0;height:var(--bar);background:var(--surface);border-top:1px solid #30363d;display:flex;align-items:center;gap:8px;padding:0 10px;z-index:100;}
-#bidInput{flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:var(--text);font-size:15px;padding:8px 12px;}
-#bidInput::placeholder{color:var(--muted)}
-#submitBidBtn{background:var(--primary);color:#000;font-weight:700;font-size:14px;padding:9px 18px;border-radius:8px;white-space:nowrap;}
-#submitBidBtn:active{background:var(--primary-dark)}
-#submitBidBtn:disabled{background:#444;color:#888}
+/* FOOTER */
+.footerbar{
+  position:fixed;bottom:0;left:0;width:100%;height:30px;
+  background:var(--brand);color:rgba(255,255,255,.8);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;z-index:999;
+  box-shadow:0 -2px 6px rgba(0,0,0,.4);
+}
 
-#loginScreen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:200;}
-.loginCard{background:var(--surface);border:1px solid #30363d;border-radius:14px;padding:28px 22px;width:100%;max-width:380px}
-.loginCard h2{font-size:20px;margin-bottom:4px;color:var(--primary)}
-.loginCard p{color:var(--muted);font-size:13px;margin-bottom:22px}
-.loginCard input{width:100%;background:var(--bg);border:1px solid #30363d;color:var(--text);padding:11px 14px;border-radius:8px;font-size:15px;margin-bottom:14px;}
-.loginCard button.loginBtn{width:100%;background:var(--primary);color:#000;font-weight:700;font-size:15px;padding:12px;border-radius:8px;}
-.loginCard button.loginBtn:active{background:var(--primary-dark)}
-.roleToggle{display:flex;gap:8px;margin-bottom:18px}
-.roleToggle button{flex:1;padding:8px;border-radius:7px;font-size:13px;font-weight:600;border:1px solid #30363d;background:var(--bg);color:var(--muted);}
-.roleToggle button.active{background:var(--primary);color:#000;border-color:var(--primary)}
-#loginErr{color:var(--danger);font-size:13px;margin-top:10px;text-align:center;min-height:18px}
-
-.aCard{background:var(--card);border:1px solid #30363d;border-radius:var(--radius);margin-bottom:12px;padding:14px;position:relative;}
-.aCard.live{border-left:3px solid var(--live)}
-.aCard.upcoming{border-left:3px solid var(--primary)}
-.aCard.closed,.aCard.sold{border-left:3px solid var(--muted);opacity:.75}
-.aCard .statusPill{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;}
-.aCard .statusPill.live{background:rgba(248,81,73,.15);color:var(--live)}
-.aCard .statusPill.upcoming{background:rgba(230,168,23,.15);color:var(--primary)}
-.aCard .statusPill.closed,.aCard .statusPill.sold{background:#30363d;color:var(--muted)}
-.aCard .rc{font-size:18px;font-weight:700;color:var(--text);margin-bottom:3px}
-.aCard .details{font-size:13px;color:var(--muted);margin-bottom:10px}
-.aCard .metaRow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.aCard .metaTag{background:#0d1117;border:1px solid #30363d;border-radius:5px;font-size:11px;padding:3px 8px;color:var(--muted)}
-.aCard .bidRow{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
-.aCard .bidAmt{font-size:20px;font-weight:700;color:var(--primary)}
-.aCard .bidLabel{font-size:11px;color:var(--muted)}
-.aCard .imgBtn{background:#0d1117;border:1px solid #30363d;color:var(--text);font-size:12px;padding:6px 12px;border-radius:6px;}
-.bidStatus{font-size:12px;margin-top:8px;padding:5px 10px;border-radius:6px;text-align:center}
-.bidStatus.winning{background:rgba(63,185,80,.12);color:var(--success)}
-.bidStatus.outbid{background:rgba(248,81,73,.12);color:var(--danger)}
-.selectOverlay{background:rgba(230,168,23,.08);border:1px dashed var(--primary);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px;color:var(--primary);cursor:pointer;text-align:center;}
-.aCard.selected{border:2px solid var(--primary)}
-#emptyMsg{text-align:center;color:var(--muted);padding:40px 20px;font-size:14px}
-#errorBanner{background:rgba(248,81,73,.1);border:1px solid var(--danger);color:var(--danger);font-size:13px;padding:10px 14px;border-radius:8px;margin-bottom:12px;display:none;}
-
-#imgPopup{display:none;position:fixed;inset:0;background:#000;z-index:300;flex-direction:column;align-items:center;justify-content:center;}
-#imgPopup.open{display:flex}
-#imgPopup img{max-width:100%;max-height:80vh;object-fit:contain}
-#imgNav{display:flex;gap:20px;margin-top:14px}
-#imgNav button{background:#1c2330;color:var(--text);padding:8px 22px;border-radius:8px;font-size:14px}
-#imgClose{position:absolute;top:14px;right:14px;background:#1c2330;color:var(--text);padding:8px 14px;border-radius:8px;font-size:14px}
-#imgCounter{color:var(--muted);font-size:13px;margin-top:8px}
-
-#toast{position:fixed;bottom:calc(var(--bar) + 12px);left:50%;transform:translateX(-50%);background:#1c2330;border:1px solid #30363d;color:var(--text);padding:10px 20px;border-radius:8px;font-size:13px;z-index:400;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
-#toast.show{opacity:1}
-#toast.err{border-color:var(--danger);color:var(--danger)}
-#toast.ok{border-color:var(--success);color:var(--success)}
-
-.spinner{width:22px;height:22px;border:2px solid #30363d;border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;margin:40px auto;}
+/* LOADING OVERLAY */
+#loadingOverlay{
+  position:fixed;inset:0;background:var(--brand);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:2000;transition:opacity .4s;
+}
+#loadingOverlay.hide{opacity:0;pointer-events:none}
+.loader-logo{
+  width:110px;height:110px;background:white;
+  border-radius:20px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.3);margin-bottom:24px;overflow:hidden;
+}
+.loader-logo img{max-width:80%;max-height:80%;object-fit:contain}
+.loader-text{color:white;font-size:15px;font-weight:600;margin-bottom:16px}
+.spinner{
+  width:32px;height:32px;
+  border:3px solid rgba(255,255,255,.3);
+  border-top-color:white;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* MODAL BLUR (when image modal open in iframe) */
+body.modal-open-iframe::after{
+  content:'';position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;
+}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="loginCard">
-    <h2>BidDrive</h2>
-    <p>Dealer Vehicle Auction Platform</p>
-    <div class="roleToggle">
-      <button id="roleDealer" class="active" onclick="setRole('dealer')">Dealer</button>
-      <button id="roleEmp" onclick="setRole('employee')">Employee</button>
-    </div>
-    <input id="mobileInput" type="tel" maxlength="10" placeholder="Enter 10-digit mobile number" inputmode="numeric"/>
-    <button class="loginBtn" onclick="doLogin()">Login →</button>
-    <div id="loginErr"></div>
+<!-- LOADING SCREEN -->
+<div id="loadingOverlay">
+  <div class="loader-logo">
+    <img src="https://drive.google.com/thumbnail?id=1FREFFtAgLbSXJfKGIR_f1OxGt5qR6vMX&sz=w400" alt="Logo">
   </div>
+  <div class="loader-text">Loading Dealer Portal...</div>
+  <div class="spinner"></div>
 </div>
 
 <!-- TOP BAR -->
-<div id="topBar" style="display:none">
-  <div class="brand">🚗 BidDrive</div>
-  <div id="timerBox">
-    <div id="selectedAuctionLabel" style="font-size:10px;color:var(--muted)">Select auction</div>
-    <span id="timerVal">--:--</span>
-  </div>
-  <button id="logoutBtn" onclick="doLogout()">Logout</button>
-</div>
-
-<!-- MAIN -->
-<div id="main" style="display:none">
-  <div id="errorBanner"></div>
-  <div id="auctionList"><div class="spinner"></div></div>
-</div>
-
-<!-- BOTTOM BAR -->
-<div id="bottomBar" style="display:none">
-  <input id="bidInput" type="number" placeholder="Enter bid amount (₹)" inputmode="numeric"/>
-  <button id="submitBidBtn" onclick="handleBidSubmit()">Place Bid</button>
-</div>
-
-<!-- IMAGE POPUP -->
-<div id="imgPopup">
-  <button id="imgClose" onclick="closeImgPopup()">✕ Close</button>
-  <img id="imgEl" src="" alt="Vehicle"/>
-  <div id="imgCounter"></div>
-  <div id="imgNav">
-    <button onclick="imgNav(-1)">‹ Prev</button>
-    <button onclick="imgNav(1)">Next ›</button>
+<div class="topbar">
+  <div class="brand-title">🚗 Dealer Auction Portal</div>
+  <div class="search-wrap">
+    <input id="globalSearch" type="text" placeholder="Search vehicles..." oninput="globalSearch()">
   </div>
 </div>
 
-<!-- TOAST -->
-<div id="toast"></div>
+<!-- IFRAME -->
+<iframe
+  id="appFrame"
+  src="https://script.google.com/macros/s/AKfycbxSfTAJKu7bp_S9GfPN8UE2uLLIMfnMrzvs0wRMOuKPvPX9aghilQy6oeYH4buH_4DG/exec"
+  allowfullscreen
+  allow="geolocation"
+  onload="frameLoaded()">
+</iframe>
+
+<!-- FOOTER -->
+<div class="footerbar">© 2026 Dealer Auction Platform &nbsp;|&nbsp; Secure Dealer Environment</div>
 
 <script>
-// ── CONFIG ───────────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbyEkrgRvCCA2Zoka22pjY_S6HLFc5TxJkEdZN3ELIZ-ZmYUcZnUVPjCfjL1Ssc7SfKO/exec';
-
-// ── STATE ────────────────────────────────────────────────────
-const S = {
-  token: sessionStorage.getItem('bd_token') || null,
-  role:  sessionStorage.getItem('bd_role')  || 'dealer',
-  name:  sessionStorage.getItem('bd_name')  || '',
-  auctions: [],
-  selectedId: null,
-  pollTimer: null,
-  countdownTimer: null,
-  imgLinks: [],
-  imgIdx: 0,
-};
-
-// ── API CALL ─────────────────────────────────────────────────
-async function api(params, retries = 2) {
-  for (let i = 0; i <= retries; i++) {
-    try {
-      const r = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' }, // GAS CORS workaround
-        body: JSON.stringify(params),
-        signal: AbortSignal.timeout(12000),
-      });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return await r.json();
-    } catch (e) {
-      if (i === retries) throw e;
-      await new Promise(r => setTimeout(r, 1500 * (i + 1)));
-    }
-  }
+// ── LOADING OVERLAY ──────────────────────────────────────────
+function frameLoaded() {
+  setTimeout(() => {
+    document.getElementById('loadingOverlay').classList.add('hide');
+    setTimeout(() => document.getElementById('loadingOverlay').remove(), 500);
+  }, 800);
 }
 
-// ── INIT ─────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-  if (S.token) { showApp(); loadAuctions(); }
-});
-
-// ── ROLE ─────────────────────────────────────────────────────
-function setRole(r) {
-  S.role = r;
-  document.getElementById('roleDealer').classList.toggle('active', r === 'dealer');
-  document.getElementById('roleEmp').classList.toggle('active', r === 'employee');
-}
-
-// ── LOGIN ────────────────────────────────────────────────────
-async function doLogin() {
-  const mobile = document.getElementById('mobileInput').value.trim();
-  const errEl  = document.getElementById('loginErr');
-  errEl.textContent = '';
-
-  if (!/^[6-9]\d{9}$/.test(mobile)) {
-    errEl.textContent = 'Enter a valid 10-digit mobile number.';
-    return;
-  }
-
-  const btn = document.querySelector('.loginBtn');
-  btn.textContent = 'Logging in…';
-  btn.disabled = true;
-
-  try {
-    const action = S.role === 'dealer' ? 'dealerLogin' : 'employeeLogin';
-    const res = await api({ action, mobile });
-    if (!res.success) { errEl.textContent = res.error; return; }
-
-    sessionStorage.setItem('bd_token', res.token);
-    sessionStorage.setItem('bd_role',  res.role);
-    sessionStorage.setItem('bd_name',  res.name);
-    S.token = res.token; S.role = res.role; S.name = res.name;
-
-    showApp();
-    loadAuctions();
-
-    // Start geo tracking if employee
-    if (S.role === 'employee') startGeoTracking();
-
-  } catch (e) {
-    errEl.textContent = 'Connection error. Please retry.';
-  } finally {
-    btn.textContent = 'Login →';
-    btn.disabled = false;
-  }
-}
-
-// ── LOGOUT ───────────────────────────────────────────────────
-function doLogout() {
-  sessionStorage.clear();
-  clearInterval(S.pollTimer);
-  clearInterval(S.countdownTimer);
-  location.reload();
-}
-
-// ── SHOW APP ─────────────────────────────────────────────────
-function showApp() {
-  document.getElementById('loginScreen').style.display  = 'none';
-  document.getElementById('topBar').style.display       = 'flex';
-  document.getElementById('main').style.display         = 'block';
-  if (S.role === 'dealer')
-    document.getElementById('bottomBar').style.display  = 'flex';
-}
-
-// ── LOAD AUCTIONS ────────────────────────────────────────────
-async function loadAuctions() {
-  try {
-    const res = await api({ action: 'getAuctions', token: S.token });
-    if (!res.success) {
-      if (res.error && res.error.includes('session')) doLogout();
-      showError(res.error || 'Failed to load auctions.');
-      return;
-    }
-    S.auctions = res.auctions;
-    renderAuctions();
-    if (!S.pollTimer) startPolling();
-    if (S.selectedId) startCountdown();
-  } catch (e) {
-    showError('Network error — retrying...');
-  }
-}
-
-function startPolling() {
-  clearInterval(S.pollTimer);
-  S.pollTimer = setInterval(loadAuctions, 15000);
-}
-
-// ── RENDER ───────────────────────────────────────────────────
-function renderAuctions() {
-  const list = document.getElementById('auctionList');
-  if (!S.auctions.length) { list.innerHTML = '<div id="emptyMsg">No auctions available.</div>'; return; }
-
-  const scrollY = document.getElementById('main').scrollTop;
-  list.innerHTML = S.auctions.map(a => cardHTML(a)).join('');
-  document.getElementById('main').scrollTop = scrollY;
-  updateBidBar();
-}
-
-function cardHTML(a) {
-  const sel = S.selectedId === a.auctionId ? ' selected' : '';
-  const imgs = a.imageLinks && a.imageLinks.length
-    ? `<button class="imgBtn" onclick='openImgPopup(${JSON.stringify(a.imageLinks)})'>📷 ${a.imageLinks.length} Photo${a.imageLinks.length>1?'s':''}</button>`
-    : '';
-
-  let bidStatusHTML = '';
-  if (a.status === 'Live' || a.status === 'Closed') {
-    if (a.isWinner)
-      bidStatusHTML = `<div class="bidStatus winning">✅ You are the highest bidder</div>`;
-    else if (a.status === 'Live')
-      bidStatusHTML = `<div class="bidStatus outbid">⚡ You've been outbid</div>`;
-  }
-
-  const selectHTML = (a.status === 'Live' && S.role === 'dealer')
-    ? `<div class="selectOverlay" onclick="selectAuction('${a.auctionId}')">
-        ${S.selectedId === a.auctionId ? '✓ Selected for bidding' : 'Tap to bid on this auction'}
-       </div>` : '';
-
-  return `
-  <div class="aCard ${a.status.toLowerCase()}${sel}" id="card_${a.auctionId}">
-    <span class="statusPill ${a.status.toLowerCase()}">${esc(a.status)}</span>
-    <div class="rc">${esc(a.rcNumber)}</div>
-    <div class="details">${esc(a.vehicleDetails)}</div>
-    <div class="metaRow">
-      <span class="metaTag">📍 ${esc(a.location)}</span>
-      <span class="metaTag">👤 ${esc(a.evaluator)}</span>
-    </div>
-    <div class="bidRow">
-      <div>
-        <div class="bidLabel">Highest Bid</div>
-        <div class="bidAmt">₹${Number(a.highestBid).toLocaleString('en-IN')}</div>
-      </div>
-      ${imgs}
-    </div>
-    ${bidStatusHTML}
-    ${selectHTML}
-  </div>`;
-}
-
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ── SELECT AUCTION ────────────────────────────────────────────
-function selectAuction(id) {
-  S.selectedId = id;
-  renderAuctions();
-  startCountdown();
-  document.getElementById('bidInput').focus();
-  toast('Auction selected. Enter your bid below.', 'ok');
-}
-
-// ── COUNTDOWN ────────────────────────────────────────────────
-function startCountdown() {
-  clearInterval(S.countdownTimer);
-  S.countdownTimer = setInterval(() => {
-    const a = S.auctions.find(x => x.auctionId === S.selectedId);
-    if (!a || a.status !== 'Live') {
-      document.getElementById('timerVal').textContent = '--:--';
-      document.getElementById('selectedAuctionLabel').textContent = 'Select auction';
-      return;
-    }
-    const diff = Math.max(0, new Date(a.endTime) - Date.now());
-    const m = String(Math.floor(diff / 60000)).padStart(2, '0');
-    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-    document.getElementById('timerVal').textContent = `${m}:${s}`;
-    document.getElementById('selectedAuctionLabel').textContent = esc(a.rcNumber);
-  }, 1000);
-}
-
-// ── BID ───────────────────────────────────────────────────────
-async function handleBidSubmit() {
-  if (!S.selectedId) { toast('Select an auction first.', 'err'); return; }
-  const amt = parseInt(document.getElementById('bidInput').value, 10);
-  if (isNaN(amt) || amt <= 0) { toast('Enter a valid bid amount.', 'err'); return; }
-
-  const btn = document.getElementById('submitBidBtn');
-  btn.disabled = true; btn.textContent = 'Placing…';
-
-  try {
-    const res = await api({ action: 'submitBid', token: S.token, auctionId: S.selectedId, bidAmount: amt });
-    if (res.success) {
-      toast(`Bid ₹${amt.toLocaleString('en-IN')} placed!`, 'ok');
-      document.getElementById('bidInput').value = '';
-      loadAuctions();
-    } else {
-      toast(res.error, 'err');
-    }
-  } catch (e) {
-    toast('Network error. Please retry.', 'err');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Place Bid';
-  }
-}
-
-function updateBidBar() {
-  const a = S.auctions.find(x => x.auctionId === S.selectedId);
-  document.getElementById('submitBidBtn').disabled = !a || a.status !== 'Live';
-}
-
-// ── GEO TRACKING ─────────────────────────────────────────────
-let geoInterval = null;
-const GEO_ACCURACY_THRESHOLD = 100;
-const GEO_STABILIZE_DELAY    = 4000;
-
-function startGeoTracking() {
-  if (!navigator.geolocation) return;
-  // Wait for GPS stabilization then capture
-  setTimeout(() => captureGeo(), GEO_STABILIZE_DELAY);
-  geoInterval = setInterval(() => captureGeo(), 5 * 60 * 1000); // every 5 min
-}
-
-function captureGeo() {
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-      const isFake = detectFakeGps(pos);
-      api({ action: 'geoTrack', token: S.token, lat, lng, accuracy, isFake })
-        .catch(() => {}); // Silent fail — geo is non-critical
-    },
-    err => { console.warn('GPS error:', err.message); },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+// ── GLOBAL SEARCH → IFRAME ────────────────────────────────────
+function globalSearch() {
+  const val = document.getElementById('globalSearch').value;
+  document.getElementById('appFrame').contentWindow.postMessage(
+    { type: 'GLOBAL_SEARCH', value: val }, '*'
   );
 }
 
-function detectFakeGps(pos) {
-  // Heuristic: suspiciously perfect accuracy or speed
-  const acc = pos.coords.accuracy;
-  const spd = pos.coords.speed;
-  if (acc === 0) return true;          // No real GPS is perfectly 0m accurate
-  if (acc < 1)  return true;           // Sub-1m accuracy is suspicious indoors
-  if (spd !== null && spd > 83) return true; // >300 km/h is physically implausible
-  return false;
-}
-
-// ── IMAGE POPUP ───────────────────────────────────────────────
-function openImgPopup(links) {
-  S.imgLinks = links; S.imgIdx = 0;
-  showImg();
-  document.getElementById('imgPopup').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeImgPopup() {
-  document.getElementById('imgPopup').classList.remove('open');
-  document.body.style.overflow = '';
-  document.getElementById('imgEl').src = '';
-}
-
-function showImg() {
-  document.getElementById('imgEl').src = S.imgLinks[S.imgIdx];
-  document.getElementById('imgCounter').textContent = `${S.imgIdx + 1} / ${S.imgLinks.length}`;
-}
-
-function imgNav(dir) {
-  S.imgIdx = (S.imgIdx + dir + S.imgLinks.length) % S.imgLinks.length;
-  showImg();
-}
-
-let touchX = 0;
-document.getElementById('imgPopup').addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, {passive:true});
-document.getElementById('imgPopup').addEventListener('touchend',   e => {
-  const dx = e.changedTouches[0].clientX - touchX;
-  if (Math.abs(dx) > 50) imgNav(dx < 0 ? 1 : -1);
-}, {passive:true});
-
-// ── UTILITIES ─────────────────────────────────────────────────
-function showError(msg) {
-  const b = document.getElementById('errorBanner');
-  b.textContent = msg; b.style.display = 'block';
-  setTimeout(() => b.style.display = 'none', 5000);
-}
-
-let toastTimer;
-function toast(msg, type = '') {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.className = 'show ' + type;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.className = '', 2800);
-}
+// ── MESSAGES FROM IFRAME ──────────────────────────────────────
+window.addEventListener('message', e => {
+  if (e.data === 'OPEN_MODAL') {
+    // Freeze wrapper scroll when image modal is open
+    document.body.classList.add('modal-open-iframe');
+  }
+  if (e.data === 'CLOSE_MODAL') {
+    document.body.classList.remove('modal-open-iframe');
+  }
+  if (e.data === 'DEALER_LOGOUT') {
+    document.getElementById('appFrame').src += '?logout=true';
+  }
+});
 </script>
 </body>
 </html>
